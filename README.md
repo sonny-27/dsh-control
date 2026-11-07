@@ -18,6 +18,23 @@
 
 这不是 DSH 安装包。需要已有 Windows DSH Desktop，组合推荐使用 0.2.1-rc.3；声明兼容的其他版本不等于经过同样完整的验收。Chrome 已做实机验证。Node、pnpm 优先使用 DSH 自带版本。
 
+
+## 图文说明
+
+[完整图文使用指南](docs/USER-GUIDE.zh-CN.md) 覆盖安装、会话审批、视觉辅助、桌面提示、浏览器连接与父子标签交接。以下是测试夹具和提示实测截图，模型 ID 为测试值。
+
+**电脑操控：从观察开始的顶部提示和人工停止**
+
+![桌面操控顶部提示](docs/images/actual-desktop-remote-hud.png)
+
+**浏览器：同窗口内不同会话的彩色原生标签组**
+
+![浏览器会话原生标签组](docs/images/native-session-groups.png)
+
+**GUI：实际审批流程、站点浏览授权与模型插槽**
+
+![审批设置界面](docs/images/gui-native-auto.png)
+
 ## 安装
 
 先结束正在执行的电脑操作。推荐退出 DSH 后安装，再启动 DSH。解压到普通本地文件夹，在 PowerShell 中进入本目录：

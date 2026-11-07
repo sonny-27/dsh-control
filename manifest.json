@@ -28,6 +28,41 @@
       "sha256": "4ca15fddf87fcd1e9930536a9d433fae44fc612b42262f1b2db55e4501222db5"
     },
     {
+      "path": "docs/images/actual-desktop-remote-hud.png",
+      "bytes": 3789,
+      "sha256": "98934ce3203ba1fe664aacf5d13d42ebf2feb1701eb1d414e61e189829173dd9"
+    },
+    {
+      "path": "docs/images/browser-page-session-indicator.png",
+      "bytes": 18729,
+      "sha256": "1325f94ccec22457eaae7d0a44e655d3f29a6e5c55e9ca706f029e6377b9cb95"
+    },
+    {
+      "path": "docs/images/gui-native-auto.png",
+      "bytes": 70082,
+      "sha256": "ca791eba9882634b607e123bb8c7b68705e8e8db7509a5c70f919f5a1a53ed0b"
+    },
+    {
+      "path": "docs/images/gui-review-settings.png",
+      "bytes": 76255,
+      "sha256": "260cb28080e0fe7bbc668b8c5fb041f9905830240c9db5ed5fd379d6795439bc"
+    },
+    {
+      "path": "docs/images/gui-vision-slot.png",
+      "bytes": 69360,
+      "sha256": "fd698eb4c781d7f026acd4a58618e0f725280c132a9e1bec6f34d909c11021ef"
+    },
+    {
+      "path": "docs/images/native-session-groups.png",
+      "bytes": 11987,
+      "sha256": "bf7dd19417c5fc4657c22fe1e926956aca248b9cb792576314a77c9b8a8eac48"
+    },
+    {
+      "path": "docs/USER-GUIDE.zh-CN.md",
+      "bytes": 5829,
+      "sha256": "2fe2b1b7950f9c6e4069cb8e251b7c246bbedea57951b936a80585369ac620c7"
+    },
+    {
       "path": "HANDOFF.md",
       "bytes": 5802,
       "sha256": "927c949560c23d8dbb597af4c9c73866ac7d9de4fd30515ef0038d627b2f6145"
@@ -59,8 +94,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 5414,
-      "sha256": "a78dfbfc8b5891569b4234d1567a283d3e29162deed9f25fff6d02b91c9c1ae6"
+      "bytes": 6073,
+      "sha256": "c7003633731cc2b9699c217564b248e4cee0ec51b81880f8d848a19a19b93eed"
     },
     {
       "path": "reports/browser-freshness-report.json",
