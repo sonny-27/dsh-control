@@ -1,0 +1,1 @@
+{"manifest_version":3,"name":"DSH Session Tab Groups","version":"1.0.0","permissions":["tabs","tabGroups","debugger"],"background":{"service_worker":"worker.js"}}
