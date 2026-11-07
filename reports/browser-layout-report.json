@@ -1,0 +1,103 @@
+{
+  "startedAt": "2026-10-28T21:29:37.774Z",
+  "checks": [
+    {
+      "label": "moving the actual browser window preserves page CSS coordinates",
+      "result": "pass"
+    },
+    {
+      "label": "responsive resize relocates a named button and clicks it once",
+      "result": "pass"
+    },
+    {
+      "label": "layout relocation does not click a decoy at the former position",
+      "result": "pass"
+    },
+    {
+      "label": "named input follows responsive reflow",
+      "result": "pass"
+    },
+    {
+      "label": "focused input follows resize without an extra click",
+      "result": "pass"
+    },
+    {
+      "label": "DOM fill follows the same editable node after layout changes",
+      "result": "pass"
+    },
+    {
+      "label": "CSS zoom uses newly calculated target geometry",
+      "result": "pass"
+    },
+    {
+      "label": "a named target follows page scrolling while still visible",
+      "result": "pass"
+    },
+    {
+      "label": "hover-triggered one-time movement is recalculated before clicking",
+      "result": "pass"
+    },
+    {
+      "label": "continuous hover movement stops before any click",
+      "result": "pass"
+    },
+    {
+      "label": "explicit old coordinates are rejected after resize",
+      "result": "pass"
+    },
+    {
+      "label": "an identical replacement button is never adopted as the old target",
+      "result": "pass"
+    },
+    {
+      "label": "changed target text remains a semantic change",
+      "result": "pass"
+    },
+    {
+      "label": "an overlay at the new location still blocks the target",
+      "result": "pass"
+    },
+    {
+      "label": "relayout during approval rechecks the same target",
+      "result": "pass"
+    },
+    {
+      "label": "denied approval still blocks a relocated target",
+      "result": "pass"
+    },
+    {
+      "label": "delayed observation and changed layout are both revalidated",
+      "result": "pass"
+    },
+    {
+      "label": "named batch targets follow reflow and earlier-step layout changes",
+      "result": "pass"
+    },
+    {
+      "label": "changed link semantics stop a batch after its completed step",
+      "result": "pass"
+    },
+    {
+      "label": "absolute drawing paths remain strict after the canvas moves",
+      "result": "pass"
+    },
+    {
+      "label": "unchanged absolute drawing still performs one stroke",
+      "result": "pass"
+    },
+    {
+      "label": "device scale factor does not corrupt CSS screenshot mapping",
+      "result": "pass"
+    },
+    {
+      "label": "another session cannot use a relocated target observation",
+      "result": "pass"
+    },
+    {
+      "label": "manual stop remains effective during layout adaptation",
+      "result": "pass"
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-28T21:29:46.961Z"
+}

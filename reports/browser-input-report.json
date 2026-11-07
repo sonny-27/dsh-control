@@ -1,0 +1,91 @@
+{
+  "startedAt": "2026-10-28T21:29:23.061Z",
+  "checks": [
+    {
+      "label": "coordinate typing survives unrelated DOM caret blinking",
+      "result": "pass"
+    },
+    {
+      "label": "click then type without coordinates binds the observed focused field",
+      "result": "pass"
+    },
+    {
+      "label": "explicit input ID survives focus styling and placeholder removal when its label is stable",
+      "result": "pass"
+    },
+    {
+      "label": "focused append preserves existing content without a redundant click",
+      "result": "pass"
+    },
+    {
+      "label": "textarea accepts focused typing through the same target checks",
+      "result": "pass"
+    },
+    {
+      "label": "contenteditable text mutations do not redefine its control name",
+      "result": "pass"
+    },
+    {
+      "label": "plaintext-only editing hosts are observed and support focused input",
+      "result": "pass"
+    },
+    {
+      "label": "coordinates over nested rich-text roles bind the actual editing host",
+      "result": "pass"
+    },
+    {
+      "label": "missing target returns an input-target error instead of OUT_OF_VIEWPORT",
+      "result": "pass"
+    },
+    {
+      "label": "partial coordinates and noneditable coordinates are rejected before typing",
+      "result": "pass"
+    },
+    {
+      "label": "focus changes after observation do not redirect text into another field",
+      "result": "pass"
+    },
+    {
+      "label": "replacement of an input with an identical clone requires a new observation",
+      "result": "pass"
+    },
+    {
+      "label": "a moved input is rejected when explicit old coordinates are supplied",
+      "result": "pass"
+    },
+    {
+      "label": "an overlay covering the field still blocks input",
+      "result": "pass"
+    },
+    {
+      "label": "read-only fields are rejected with a specific error",
+      "result": "pass"
+    },
+    {
+      "label": "focus stolen by a click handler cannot receive the requested text",
+      "result": "pass"
+    },
+    {
+      "label": "focus stolen by select-all cannot receive the requested text",
+      "result": "pass"
+    },
+    {
+      "label": "coordinate target is resolved before approval and checked again after it",
+      "result": "pass"
+    },
+    {
+      "label": "focused target remains pinned when approval changes page focus",
+      "result": "pass"
+    },
+    {
+      "label": "an explicit input ID cannot redirect coordinates to another control",
+      "result": "pass"
+    },
+    {
+      "label": "DOM fill remains available for a verified input under blinking",
+      "result": "pass"
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-28T21:29:30.070Z"
+}

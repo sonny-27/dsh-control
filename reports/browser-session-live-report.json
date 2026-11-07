@@ -1,0 +1,85 @@
+{
+  "startedAt": "2026-10-28T21:29:52.682Z",
+  "checks": [
+    {
+      "label": "same window contains two distinct native colored session tab groups",
+      "result": "pass"
+    },
+    {
+      "label": "browser operations show only in-page indicators and do not show desktop HUD",
+      "result": "pass"
+    },
+    {
+      "label": "native group labels and the active page indicator are rendered in the shared browser window",
+      "result": "pass"
+    },
+    {
+      "label": "site browsing reuse avoids repeating workspace ask but other sessions need their own grant",
+      "result": "pass"
+    },
+    {
+      "label": "foreign tab IDs and observation IDs cannot be used to operate another group",
+      "result": "pass"
+    },
+    {
+      "label": "unrelated DOM updates do not invalidate the same verified link target",
+      "result": "pass"
+    },
+    {
+      "label": "unknown writing button still asks instead of reusing browsing authorization",
+      "result": "pass"
+    },
+    {
+      "label": "popup tabs inherit opener ownership and native group without leaking to another session",
+      "result": "pass"
+    },
+    {
+      "label": "closing one managed group preserves the other group and its current page",
+      "result": "pass"
+    },
+    {
+      "label": "agent Escape dismisses page UI without being mistaken for human takeover",
+      "result": "pass"
+    },
+    {
+      "label": "user browser attach is GUI-only and initially exposes no user tabs to the model",
+      "result": "pass"
+    },
+    {
+      "label": "explicit user selection hands off one tab while private tabs remain inaccessible",
+      "result": "pass"
+    },
+    {
+      "label": "human pause and GUI release preserve user browser pages and window",
+      "result": "pass"
+    }
+  ],
+  "groups": [
+    {
+      "owner": "A",
+      "title": "DSH · 会话 A · A",
+      "color": "blue",
+      "nativeGroupId": 1010554107,
+      "windowId": 2072148501,
+      "mode": "managed",
+      "persistent": false,
+      "sharedCookies": true,
+      "tabs": 1,
+      "processId": 35140
+    },
+    {
+      "owner": "B",
+      "title": "DSH · 会话 B · B",
+      "color": "green",
+      "nativeGroupId": 712311472,
+      "windowId": 2072148501,
+      "mode": "managed",
+      "persistent": false,
+      "sharedCookies": true,
+      "tabs": 1,
+      "processId": 35140
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-28T21:30:00.081Z"
+}

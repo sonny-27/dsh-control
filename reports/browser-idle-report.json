@@ -1,0 +1,27 @@
+{
+  "startedAt": "2026-10-28T21:29:48.209Z",
+  "checks": [
+    {
+      "label": "real idle timer hides the browser indicator without cancelling the task",
+      "result": "pass"
+    },
+    {
+      "label": "non-browser work continues after the control monitor is released",
+      "result": "pass"
+    },
+    {
+      "label": "a later browser observation reacquires its indicator without manual resume",
+      "result": "pass"
+    },
+    {
+      "label": "manual stop still cancels and blocks further browser control",
+      "result": "pass"
+    },
+    {
+      "label": "idle audit is a resource release rather than a user-stop event",
+      "result": "pass"
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-28T21:29:51.507Z"
+}

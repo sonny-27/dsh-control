@@ -1,0 +1,54 @@
+{
+  "method": "PowerShell 5.1 scripts with isolated fake DSH profile and fake pnpm; no actual installation",
+  "checks": [
+    {
+      "name": "complete bundle checksum validation succeeds",
+      "result": "pass"
+    },
+    {
+      "name": "PlanOnly does not modify a profile or invoke pnpm",
+      "result": "pass"
+    },
+    {
+      "name": "profile path traversal is rejected",
+      "result": "pass"
+    },
+    {
+      "name": "installation preserves unrelated dependencies and creates a complete backup",
+      "result": "pass"
+    },
+    {
+      "name": "rollback refuses overwriting later profile changes",
+      "result": "pass"
+    },
+    {
+      "name": "rollback PlanOnly leaves installed files unchanged",
+      "result": "pass"
+    },
+    {
+      "name": "rollback restores exact original profile files and asks pnpm to synchronize",
+      "result": "pass"
+    },
+    {
+      "name": "repeated installation keeps one managed patch block and unique bundle entries",
+      "result": "pass"
+    },
+    {
+      "name": "failed dependency installation restores all profile files",
+      "result": "pass"
+    },
+    {
+      "name": "corrupt bundle file is rejected before installation",
+      "result": "pass"
+    },
+    {
+      "name": "nested browser-extension manifest is covered by checksums",
+      "result": "pass"
+    },
+    {
+      "name": "rollback cannot target a profile outside its selected DSH home",
+      "result": "pass"
+    }
+  ],
+  "passed": true
+}

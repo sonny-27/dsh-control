@@ -1,0 +1,22 @@
+{
+  "version": "1.12.0",
+  "passed": true,
+  "total": 280,
+  "groups": {
+    "core": 95,
+    "gui": 27,
+    "dshIntegration": 34,
+    "browserSessions": 13,
+    "visionIntegration": 7,
+    "browserInput": 21,
+    "browserFreshness": 18,
+    "browserLayout": 24,
+    "browserIdle": 5,
+    "browserPersistence": 14,
+    "browserSequence": 9,
+    "browserHandoff": 13
+  },
+  "requiresDesktopRefreshOrRestart": true,
+  "scope": "Temporary local browsers and fixture sessions; no private target website login or business replay",
+  "nativeDrawingRegression": "Separate advanced drawing run interrupted by physical user input; excluded from passing total"
+}

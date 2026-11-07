@@ -1,0 +1,115 @@
+{
+  "runtime": "Chrome + React 18.3.1 + real DSH session/preset services",
+  "checks": [
+    {
+      "label": "client registers a session-scoped GUI entry and loads current permissions",
+      "result": "pass"
+    },
+    {
+      "label": "mouse GUI selection saves separate reviewer and permission mode",
+      "result": "pass"
+    },
+    {
+      "label": "workspace ask plus model-review shows human-first order and saving never promotes session permissions",
+      "result": "pass"
+    },
+    {
+      "label": "GUI reopening and a fresh runtime preserve saved settings",
+      "result": "pass"
+    },
+    {
+      "label": "switching session never leaks reviewer settings across sessions",
+      "result": "pass"
+    },
+    {
+      "label": "Auto session displays native review priority while retaining chosen model",
+      "result": "pass"
+    },
+    {
+      "label": "GUI full-access selection never disables host Auto Review",
+      "result": "pass"
+    },
+    {
+      "label": "offline catalog still permits manual provider/model entry and saving",
+      "result": "pass"
+    },
+    {
+      "label": "unresponsive model catalog times out and GUI remains editable",
+      "result": "pass"
+    },
+    {
+      "label": "GUI stop and Escape close work without changing session permissions",
+      "result": "pass"
+    },
+    {
+      "label": "human GUI resume clears operator stop without changing reviewer or Auto permissions",
+      "result": "pass"
+    },
+    {
+      "label": "settings API rejects missing/wrong/multibyte tokens and foreign origins",
+      "result": "pass"
+    },
+    {
+      "label": "settings API rejects invalid fields/unknown sessions/oversized requests atomically",
+      "result": "pass"
+    },
+    {
+      "label": "busy operation prevents reviewer changes and another session cannot stop it",
+      "result": "pass"
+    },
+    {
+      "label": "computer status is absent from chat while native presence remains active",
+      "result": "pass"
+    },
+    {
+      "label": "user can clear remembered request approvals from settings",
+      "result": "pass"
+    },
+    {
+      "label": "GUI can preview the native HUD without changing session permissions or taking input",
+      "result": "pass"
+    },
+    {
+      "label": "invalid preview duration cannot leave an orphaned native presence",
+      "result": "pass"
+    },
+    {
+      "label": "native capture diagnostics require the owning session and no active input",
+      "result": "pass"
+    },
+    {
+      "label": "GUI browser authorization selection persists only in the current session",
+      "result": "pass"
+    },
+    {
+      "label": "GUI existing-browser workflow requires an explicit tab choice and preserves tabs on release",
+      "result": "pass"
+    },
+    {
+      "label": "GUI vision slot requires its own provider/model and preserves native Auto Review",
+      "result": "pass"
+    },
+    {
+      "label": "GUI visual route survives reopen and is isolated between sessions",
+      "result": "pass"
+    },
+    {
+      "label": "disabling visual assistance preserves saved route for later re-enabling",
+      "result": "pass"
+    },
+    {
+      "label": "GUI selects an owned tab and direct child for explicit exclusive handoff",
+      "result": "pass"
+    },
+    {
+      "label": "GUI can reclaim the lent tab without changing session permissions",
+      "result": "pass"
+    },
+    {
+      "label": "missing page bootstrap clearly requests refresh without altering settings",
+      "result": "pass"
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-28T21:30:17.644Z"
+}

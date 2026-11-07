@@ -1,0 +1,64 @@
+{
+  "startedAt": "2026-10-28T21:29:01.120Z",
+  "checks": [
+    {
+      "label": "dedicated Chrome is a separate persistent process with two owned groups",
+      "result": "pass"
+    },
+    {
+      "label": "live unsent form values are preserved without serializing them to disk",
+      "result": "pass"
+    },
+    {
+      "label": "clean DSH-controller shutdown leaves Chrome and all live tabs open",
+      "result": "pass"
+    },
+    {
+      "label": "restart reconnects the same process and preserves native group and tab IDs",
+      "result": "pass"
+    },
+    {
+      "label": "login cookies remain in the same live browser across controller restart",
+      "result": "pass"
+    },
+    {
+      "label": "old observations and reusable approvals do not survive restart",
+      "result": "pass"
+    },
+    {
+      "label": "a restored session cannot read another group or an unclaimed page",
+      "result": "pass"
+    },
+    {
+      "label": "existing second session can reconnect independently",
+      "result": "pass"
+    },
+    {
+      "label": "a hard controller-process kill still leaves Chrome and unsent data alive",
+      "result": "pass"
+    },
+    {
+      "label": "orphaned in-page control indication hides when its controller is gone",
+      "result": "pass"
+    },
+    {
+      "label": "a fresh controller recovers after hard kill without opening duplicates",
+      "result": "pass"
+    },
+    {
+      "label": "stop binding is reconnected and trusted Escape still stops the right session",
+      "result": "pass"
+    },
+    {
+      "label": "closing one group does not close another group or unclaimed tabs",
+      "result": "pass"
+    },
+    {
+      "label": "explicitly released tabs are not silently reclaimed after another restart",
+      "result": "pass"
+    }
+  ],
+  "method": "Separate Node controller processes, detached Chrome, clean shutdown and hard kill",
+  "passed": true,
+  "finishedAt": "2026-10-28T21:29:11.521Z"
+}

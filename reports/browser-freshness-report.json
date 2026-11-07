@@ -1,0 +1,80 @@
+{
+  "startedAt": "2026-10-28T21:29:31.260Z",
+  "checks": [
+    {
+      "label": "98.953-second-old named DOM input is revalidated and typed once",
+      "result": "pass"
+    },
+    {
+      "label": "successful target revalidation does not renew the old screenshot lease",
+      "result": "pass"
+    },
+    {
+      "label": "old coordinate click binds the same observed button before execution",
+      "result": "pass"
+    },
+    {
+      "label": "old coordinate input binds the observed editable target",
+      "result": "pass"
+    },
+    {
+      "label": "old focused input retains its original focused target",
+      "result": "pass"
+    },
+    {
+      "label": "programmatic draft changes without DOM events prevent old input overwrite",
+      "result": "pass"
+    },
+    {
+      "label": "checkbox state changes without events prevent a stale toggle",
+      "result": "pass"
+    },
+    {
+      "label": "expired explicit coordinates still reject moved nodes",
+      "result": "pass"
+    },
+    {
+      "label": "expired input rejects an identical replacement node",
+      "result": "pass"
+    },
+    {
+      "label": "page reload rejects the old document even at the same URL",
+      "result": "pass"
+    },
+    {
+      "label": "unbound old canvas coordinates remain expired",
+      "result": "pass"
+    },
+    {
+      "label": "hard revalidation limit still requires a new observation",
+      "result": "pass"
+    },
+    {
+      "label": "expiry during approval is revalidated rather than failing by age alone",
+      "result": "pass"
+    },
+    {
+      "label": "draft changes during slow approval stop execution after revalidation",
+      "result": "pass"
+    },
+    {
+      "label": "revalidated targets cannot bypass rejected approval",
+      "result": "pass"
+    },
+    {
+      "label": "another session cannot revalidate this observation",
+      "result": "pass"
+    },
+    {
+      "label": "manual stop blocks delayed target revalidation",
+      "result": "pass"
+    },
+    {
+      "label": "password observations remain short-lived and private state is not returned",
+      "result": "pass"
+    }
+  ],
+  "clock": "Deterministic 98.953-second model/approval delay with real Chrome validation",
+  "passed": true,
+  "finishedAt": "2026-10-28T21:29:36.545Z"
+}

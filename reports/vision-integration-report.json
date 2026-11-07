@@ -1,0 +1,38 @@
+{
+  "startedAt": "2026-10-28T21:30:01.203Z",
+  "runtime": "real DSH tools/LLM/attachments + Windows + installed Chrome",
+  "visionAdapter": "deterministic image decoder, no remote AI/OCR acceptance claimed",
+  "checks": [
+    {
+      "label": "real DSH routes screenshots to a separate image-capable slot",
+      "result": "pass"
+    },
+    {
+      "label": "text-only main model can locate a target drawn in a nameless canvas",
+      "result": "pass"
+    },
+    {
+      "label": "visual coordinates drive a real browser virtual-mouse click and a fresh text result",
+      "result": "pass"
+    },
+    {
+      "label": "real Windows visible-screen crop traverses the durable image slot with scaled coordinates",
+      "result": "pass"
+    },
+    {
+      "label": "desktop visual target still requires the native inspect/prepare binding",
+      "result": "pass"
+    },
+    {
+      "label": "a visible Windows fixture also supports the background-window screenshot route",
+      "result": "pass"
+    },
+    {
+      "label": "known non-visual slot is rejected by real model capability metadata",
+      "result": "pass"
+    }
+  ],
+  "passed": true,
+  "imagesRead": 5,
+  "finishedAt": "2026-10-28T21:30:07.065Z"
+}

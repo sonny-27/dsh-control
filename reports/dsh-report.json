@@ -1,0 +1,144 @@
+{
+  "runtime": "0.2.0-rc.2",
+  "reviewer": "deterministic test adapter, no external API",
+  "checks": [
+    {
+      "label": "Cordis loader mounts exactly three tools and the /control command",
+      "result": "pass"
+    },
+    {
+      "label": "official DSH webserver mounts GUI bootstrap and authenticated settings route",
+      "result": "pass"
+    },
+    {
+      "label": "real DSH registry executes native observations with validated JSON output",
+      "result": "pass"
+    },
+    {
+      "label": "official DSH observation retains continuous presence after tool completion without input ownership",
+      "result": "pass"
+    },
+    {
+      "label": "official human stop remains latched across automatically started turns",
+      "result": "pass"
+    },
+    {
+      "label": "official human message permits new work and turn end removes continuous indicator",
+      "result": "pass"
+    },
+    {
+      "label": "real DSH new screen schema and automatic minimized restore complete without workaround tools",
+      "result": "pass"
+    },
+    {
+      "label": "real DSH full-session dispatch clicks actual Windows fixture",
+      "result": "pass"
+    },
+    {
+      "label": "live sandbox/approval session changes flow through official DSH approval events",
+      "result": "pass"
+    },
+    {
+      "label": "official DSH approval denial blocks native action",
+      "result": "pass"
+    },
+    {
+      "label": "human slash-command selects reviewer used by real DSH LLM routing",
+      "result": "pass"
+    },
+    {
+      "label": "real DSH LLM reviewer deny prevents effect",
+      "result": "pass"
+    },
+    {
+      "label": "real DSH registry drives Chrome and browser mouse",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto Review allow executes once with session model and no duplicate plugin review",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto deny plus never blocks actual Windows effect even plugin model-review",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto deny routes through official human approval and rejection prevents effect",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto deny permits explicit human override once without duplicate approval",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto malformed response fails closed before plugin action",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto offline fails closed without fallback to full access",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto receives signed observed target facts in pending arguments and allows exact mouse plan",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto missing-evidence denial remains final when human approval is disabled",
+      "result": "pass"
+    },
+    {
+      "label": "signed plan tampering cannot inject input even when deterministic Auto reviewer allows",
+      "result": "pass"
+    },
+    {
+      "label": "manual same-request consent survives fresh observations and clears on permission changes",
+      "result": "pass"
+    },
+    {
+      "label": "official DSH batch manual approval occurs once and exact fresh plans reuse consent",
+      "result": "pass"
+    },
+    {
+      "label": "official DSH batch model rejection prevents all effects",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto Review reviews the whole batch once and deny remains final",
+      "result": "pass"
+    },
+    {
+      "label": "official DSH output contract preserves partial batch receipts without replay",
+      "result": "pass"
+    },
+    {
+      "label": "official regional desktop and browser mapping outputs cross lossless JSON boundary",
+      "result": "pass"
+    },
+    {
+      "label": "official tool schemas expose new waits, batch plans, crop mapping and paths",
+      "result": "pass"
+    },
+    {
+      "label": "official workspace browser approval grants scoped browsing once without desktop HUD",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto keeps reviewing browser group operations and denies without cached override",
+      "result": "pass"
+    },
+    {
+      "label": "native Auto reviews one direct sequence once and denial blocks the whole sequence",
+      "result": "pass"
+    },
+    {
+      "label": "official session lineage permits handoff and return while excluding the former owner",
+      "result": "pass"
+    },
+    {
+      "label": "plugin unload removes tools and command cleanly",
+      "result": "pass"
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-28T21:30:38.881Z"
+}

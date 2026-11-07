@@ -1,0 +1,43 @@
+{
+  "startedAt": "2026-10-28T21:29:11.924Z",
+  "checks": [
+    {
+      "label": "one sequence call types and sends, including initially disabled Send",
+      "result": "pass"
+    },
+    {
+      "label": "mouse sequence performs the same two effects with one approval",
+      "result": "pass"
+    },
+    {
+      "label": "whole-sequence denial sends no input and no message",
+      "result": "pass"
+    },
+    {
+      "label": "a later button that stays disabled returns partial completion without replay",
+      "result": "pass"
+    },
+    {
+      "label": "replacing the Send node after typing stops before the second effect",
+      "result": "pass"
+    },
+    {
+      "label": "read-only first target is rejected before any effects",
+      "result": "pass"
+    },
+    {
+      "label": "cross-tab and cross-session plans are rejected before input",
+      "result": "pass"
+    },
+    {
+      "label": "arbitrary navigation, coordinates, scripts and nested sequences are not accepted",
+      "result": "pass"
+    },
+    {
+      "label": "permissions changing after the first step stop the remaining action",
+      "result": "pass"
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-28T21:29:21.859Z"
+}

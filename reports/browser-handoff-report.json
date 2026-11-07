@@ -1,0 +1,59 @@
+{
+  "startedAt": "2026-10-28T21:29:44.802Z",
+  "checks": [
+    {
+      "label": "only actual direct children are offered and accepted",
+      "result": "pass"
+    },
+    {
+      "label": "handoff preserves the exact page, tab-session login and unsent draft",
+      "result": "pass"
+    },
+    {
+      "label": "parent loses access and old observation cannot be borrowed by child",
+      "result": "pass"
+    },
+    {
+      "label": "borrower must observe anew and cannot close the borrowed page",
+      "result": "pass"
+    },
+    {
+      "label": "borrower actions obey the borrower session permissions",
+      "result": "pass"
+    },
+    {
+      "label": "loan cannot be delegated onward and wrong lease IDs are rejected",
+      "result": "pass"
+    },
+    {
+      "label": "child returns the same page with a new observation required",
+      "result": "pass"
+    },
+    {
+      "label": "parent can reclaim after child is manually stopped without resuming it",
+      "result": "pass"
+    },
+    {
+      "label": "active input coordinator blocks concurrent transfer instead of interrupting it",
+      "result": "pass"
+    },
+    {
+      "label": "a denied handoff keeps the tab with its parent",
+      "result": "pass"
+    },
+    {
+      "label": "navigation while approval is pending prevents transfer",
+      "result": "pass"
+    },
+    {
+      "label": "handoff survives controller restart and parent can reclaim its lease",
+      "result": "pass"
+    },
+    {
+      "label": "an old lease cannot reclaim a newly handed-off tab",
+      "result": "pass"
+    }
+  ],
+  "passed": true,
+  "finishedAt": "2026-10-28T21:30:09.121Z"
+}

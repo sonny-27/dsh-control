@@ -1,0 +1,30 @@
+{
+  "checks": [
+    {
+      "label": "running child is rendered as running",
+      "result": "pass"
+    },
+    {
+      "label": "delivered message does not render a stopped child",
+      "result": "pass"
+    },
+    {
+      "label": "completion during asynchronous snapshot renders completed instead of stopped",
+      "result": "pass"
+    },
+    {
+      "label": "unconfirmed open log is shown as syncing with a clear explanation",
+      "result": "pass"
+    },
+    {
+      "label": "running-only filter retains syncing tasks instead of hiding them",
+      "result": "pass"
+    },
+    {
+      "label": "real manual cancellation still renders stopped with its reason",
+      "result": "pass"
+    }
+  ],
+  "runtime": "Real Chrome + React, shipped Panel and supervisor HTTP handler",
+  "passed": true
+}
