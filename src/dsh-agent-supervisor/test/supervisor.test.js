@@ -1,0 +1,147 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+import { fixture } from './fixture.js'
+
+test('catalog includes recursive descendants, real summaries and plans, but excludes independent forks', async t => {
+  const f = await fixture(t), root = f.add('root'), done = f.add('done', 'root', { running: false }), child = f.add('active', 'root')
+  f.add('grandchild', 'active'); f.add('independent-fork', 'root', { origin: 'fork' }); f.add('unrelated')
+  done.session.append('turn/start', { turn: 1 }); done.session.append('turn/end', { reason: { kind: 'completed' } })
+  child.session.append('turn/start', { turn: 1 })
+  child.session.goal = { objective: 'Inherited parent goal must not become child summary' }
+  child.session.append('user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: 'Inspect the isolated module' }] })
+  child.session.append('todo/write', { todos: [{ content: 'Read', status: 'completed' }, { content: 'Review', status: 'in_progress' }] })
+  const data = await f.supervisor.snapshot('root')
+  assert.equal(data.counts.total, 3); assert.equal(data.counts.running, 2)
+  assert.equal(data.entries[0].status, 'running')
+  assert.equal(data.entries.find(item => item.id === 'active').task, 'Inspect the isolated module')
+  assert.equal(data.entries.find(item => item.id === 'active').plan.percent, 50)
+  assert.equal(data.entries.find(item => item.id === 'grandchild').parentId, 'active')
+  assert.equal(root.cancelled.length, 0)
+})
+test('native user stop cascades to the whole tree, preserving native inboxes and unrelated agents', async t => {
+  const f = await fixture(t), root = f.add('root'), child = f.add('child', 'root'), grand = f.add('grand', 'child'), siblingRoot = f.add('other'), fork = f.add('fork', 'root', { origin: 'fork' })
+  await f.preStep(root)
+  root.cancel({ kind: 'user' }, { keepInbox: true })
+  assert.equal(child.cancelled[0].cause.kind, 'parent'); assert.equal(grand.cancelled[0].cause.kind, 'parent')
+  assert.equal(child.cancelled[0].options.keepInbox, true)
+  assert.equal(siblingRoot.cancelled.length, 0); assert.equal(fork.cancelled.length, 0)
+  assert.ok((await f.supervisor.snapshot('root')).paused)
+})
+test('normal turn completion and non-user abort do not cascade', async t => {
+  const f = await fixture(t), root = f.add('root'), child = f.add('child', 'root')
+  await f.preStep(root)
+  root.session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
+  root.controller.abort({ kind: 'user' })
+  assert.equal(child.cancelled.length, 0)
+  root.controller = new AbortController(); await f.preStep(root)
+  root.controller.abort({ kind: 'parent' })
+  assert.equal(child.cancelled.length, 0)
+})
+test('user-aborted end events provide a fallback for turns already running before plugin activation', async t => {
+  const f = await fixture(t), root = f.add('root'), child = f.add('child', 'root')
+  root.session.append('turn/end', { turn: 1, reason: { kind: 'aborted', reason: { kind: 'user' } } })
+  assert.equal(child.cancelled[0].cause.kind, 'parent')
+})
+test('late child creation and automatic completion notices cannot restart a stopped tree', async t => {
+  const f = await fixture(t), root = f.add('root')
+  f.supervisor.stopLiveTree('root')
+  const late = f.add('late-child', 'root')
+  assert.equal(late.cancelled[0].cause.kind, 'parent')
+  f.emit('agent/inbox/inserted', { agent: root, message: { source: { kind: 'subagent-settled' }, content: [] } })
+  root.controller = new AbortController(); root.status = 'running'
+  f.emit('agent/status', { agent: root, status: 'running' })
+  assert.equal(root.controller.signal.aborted, true)
+  assert.ok((await f.supervisor.snapshot('root')).paused)
+  f.emit('agent/inbox/inserted', { agent: late, message: { source: { kind: 'user' }, content: [] } })
+  assert.ok((await f.supervisor.snapshot('root')).paused, 'A newly spawned child user prompt cannot release the main pause')
+  f.emit('agent/inbox/inserted', { agent: root, message: { source: { kind: 'user' }, content: [] } })
+  assert.equal((await f.supervisor.snapshot('root')).paused, null)
+})
+test('stale controls and cross-tree branch requests are rejected before cancellation', async t => {
+  const f = await fixture(t), root = f.add('root'), child = f.add('child', 'root'), other = f.add('other')
+  root.session.append('turn/start', { turn: 1 }); child.session.append('turn/start', { turn: 1 })
+  await assert.rejects(f.supervisor.control({ rootId: 'root', action: 'stop', turnEpoch: -1 }), { status: 409 })
+  await assert.rejects(f.supervisor.control({ rootId: 'root', action: 'stop-branch', targetId: 'other', turnEpoch: -1 }), { status: 403 })
+  assert.equal(child.cancelled.length, 0); assert.equal(other.cancelled.length, 0)
+  const result = await f.supervisor.control({ rootId: 'root', action: 'stop-branch', targetId: 'child', turnEpoch: 0 })
+  assert.equal(result.result.requested, 1); assert.equal(root.cancelled.length, 0)
+})
+test('stopping state is not reported as settled and explicit resume needs the exact pause token', async t => {
+  const f = await fixture(t), root = f.add('root'), child = f.add('child', 'root'); child.hold = true
+  const data = await f.supervisor.control({ rootId: 'root', action: 'stop', turnEpoch: -1 })
+  assert.equal(data.entries[0].status, 'stopping'); assert.equal(data.counts.stopping, 1)
+  await assert.rejects(f.supervisor.control({ rootId: 'root', action: 'resume', token: 'stale' }), { status: 409 })
+  const resumed = await f.supervisor.control({ rootId: 'root', action: 'resume', token: data.paused.token })
+  assert.equal(resumed.paused, null); assert.equal(root.status, 'idle', 'Resume clears admission only, never submits or starts work')
+})
+test('stored pauses protect newly running agents after restart and cascade can be disabled independently', async t => {
+  const f = await fixture(t, { cascade: false, paused: [{ id: 'root', at: 1, token: 'saved' }] })
+  const root = f.add('root'), child = f.add('child', 'root')
+  assert.equal(root.controller.signal.aborted, true); assert.equal(child.controller.signal.aborted, true)
+  await f.supervisor.control({ rootId: 'root', action: 'resume', token: 'saved' })
+  root.controller = new AbortController(); child.cancelled.length = 0
+  await f.preStep(root); root.controller.abort({ kind: 'user' })
+  assert.equal(child.cancelled.length, 0)
+})
+test('a nested native chat can see its ancestor pause and explicitly release that exact task-tree pause', async t => {
+  const f = await fixture(t); f.add('root'); f.add('child', 'root'); f.add('grand', 'child')
+  f.supervisor.stopLiveTree('root')
+  const data = await f.supervisor.snapshot('child')
+  assert.equal(data.paused.id, 'root')
+  await f.supervisor.control({ rootId: 'child', action: 'resume', token: data.paused.token })
+  assert.equal((await f.supervisor.snapshot('root')).paused, null)
+  assert.equal(f.agents.get('root').status, 'idle')
+})
+test('cold children are observed without resuming them, references are released, and ancestry survives a cold intermediate parent', async t => {
+  const f = await fixture(t); f.add('root'); const child = f.add('child', 'root', { running: false }), grand = f.add('grand', 'child')
+  child.session.append('turn/end', { reason: { kind: 'completed' } })
+  f.cold('child')
+  const data = await f.supervisor.snapshot('root')
+  assert.equal(data.entries.length, 2); assert.deepEqual(f.reads, ['child']); assert.deepEqual(f.disposedReads, ['child'])
+  await f.supervisor.snapshot('root'); assert.equal(f.reads.length, 1)
+  f.supervisor.stopLiveTree('root')
+  assert.equal(grand.cancelled.length, 1)
+})
+test('unreadable records stay unknown, mismatched ownership is excluded and list limits are explicit', async t => {
+  const f = await fixture(t), root = f.add('root')
+  root.session.catalog.push({ id: 'missing', label: 'Missing', mode: 'one-shot' })
+  f.add('other'); const unrelated = f.add('unrelated-child', 'other')
+  root.session.catalog.push({ id: unrelated.id, label: 'Wrong owner', mode: 'continuable' })
+  const data = await f.supervisor.snapshot('root')
+  assert.equal(data.counts.unknown, 1); assert.equal(data.entries[0].openable, false); assert.equal(data.warnings.length, 1)
+})
+test('disposing the plugin removes abort propagation and all registered hooks', async t => {
+  const f = await fixture(t), root = f.add('root'), child = f.add('child', 'root')
+  await f.preStep(root); await f.supervisor.dispose(); root.controller.abort({ kind: 'user' })
+  assert.equal(child.cancelled.length, 0)
+})
+test('unreadable persisted options disable automatic cancellation and remain visible to the user', async t => {
+  const f = await fixture(t, new Error('isolated invalid state')), root = f.add('root'), child = f.add('child', 'root')
+  await f.preStep(root); root.controller.abort({ kind: 'user' })
+  assert.equal(child.cancelled.length, 0)
+  const data = await f.supervisor.snapshot('root')
+  assert.equal(data.cascade, false); assert.match(data.persistenceError, /已禁用/)
+})
+test('list exposes each child model independently, including cold records, and never fills unknown children from the main model', async t => {
+  const f = await fixture(t), root = f.add('root'), child = f.add('child', 'root'), configured = f.add('configured', 'root'), unknown = f.add('unknown', 'root')
+  root.options = { provider: 'parent-ai', model: 'parent-only-model' }
+  child.options = { provider: 'declared-ai', model: 'declared-child-model' }
+  configured.options = { provider: 'child-ai', model: 'configured-child' }
+  child.session.append('request/header', { header: { config: { provider: 'resolved-ai', model: 'actual-child', reasoningEffort: 'high' } } })
+  f.cold('child')
+  const data = await f.supervisor.snapshot('root')
+  assert.deepEqual(data.entries.find(item => item.id === child.id).model, { id: 'actual-child', provider: 'resolved-ai', reasoningEffort: 'high', source: 'request' })
+  assert.equal(data.entries.find(item => item.id === configured.id).model.source, 'configured')
+  assert.equal(data.entries.find(item => item.id === unknown.id).model, null)
+})
+test('missing or empty new projection cannot hide a model present in native live/cold events', async t => {
+  const f = await fixture(t); f.add('root'); const live = f.add('live', 'root'), cold = f.add('cold', 'root')
+  for (const child of [live,cold]) child.session.append('request/header', { header: { config: { provider: 'actual-ai', model: child.id + '-model' } } })
+  const snapshot = f.ctx.sessionProjections.snapshot
+  f.ctx.sessionProjections.snapshot = session => { const result = snapshot(session); delete result.values.agentSupervisorModel; return result }
+  f.cold(cold.id)
+  const data = await f.supervisor.snapshot('root')
+  assert.equal(data.apiVersion, 1)
+  assert.equal(data.entries.find(item => item.id === live.id).model.id, 'live-model')
+  assert.equal(data.entries.find(item => item.id === cold.id).model.id, 'cold-model')
+})
