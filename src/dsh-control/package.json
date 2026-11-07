@@ -1,0 +1,15 @@
+{
+  "name": "dsh-control",
+  "version": "1.12.0",
+  "description": "Unified Windows desktop and Chromium control with UI Automation, visible input ownership and DSH session permissions",
+  "type": "module",
+  "main": "index.js",
+  "files": ["index.js", "client.js", "lib", "native", "browser-extension", "test", "cordis.patch.yml", "README.zh-CN.md", "LICENSE"],
+  "exports": {".": "./index.js", "./client": "./client.js", "./package.json": "./package.json", "./lib/*": "./lib/*"},
+  "engines": {"node": ">=22.19.0"},
+  "license": "MIT",
+  "dsh": {"bundle": {"patch": "./cordis.patch.yml"}, "client": {"platform": "web", "inject": ["@deepseek-ai/dsh-client-ui-conversation"]}},
+  "peerDependencies": {"@deepseek-ai/cordis": "^4.0.1", "@deepseek-ai/schemastery": "^3.18.0", "@deepseek-ai/dsh-tools": ">=0.2.0-rc.2", "@deepseek-ai/dsh-llm": ">=0.2.0-rc.2"},
+  "dependencies": {"playwright-core": "1.64.0","tldts":"7.4.18"},
+  "scripts": {"test": "node --test test/*.test.mjs", "test:live": "node test/live.mjs", "test:advanced": "node test/advanced-live.mjs", "test:browser-sessions":"node test/browser-session-live.mjs", "test:browser-input":"node test/browser-input-live.mjs", "test:browser-freshness":"node test/browser-freshness-live.mjs", "test:browser-layout":"node test/browser-layout-live.mjs", "test:browser-idle":"node test/browser-idle-live.mjs", "test:browser-persistence":"node test/browser-persistence-live.mjs", "test:browser-sequence":"node test/browser-sequence-live.mjs", "test:browser-handoff":"node test/browser-handoff-live.mjs", "test:vision":"node test/vision-integration.mjs", "test:dsh": "node test/dsh.mjs", "test:gui": "node test/gui.mjs", "check": "node --check index.js && node --check client.js && node --check lib/vision.js"}
+}
