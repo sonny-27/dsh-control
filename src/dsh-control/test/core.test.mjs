@@ -1,0 +1,133 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {Coordinator, Observations} from '../lib/common.js';
+import {PermissionGate, parseReview} from '../lib/policy.js';
+import {ControlRuntime, resolveConfig} from '../index.js';
+import {Presence} from '../lib/presence.js';
+import {Evidence} from '../lib/evidence.js';
+import {Consents} from '../lib/consent.js';
+import {validUrl} from '../lib/browser.js';
+import {mkdtempSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+
+function fixture(options = {}) {
+  let requests = 0, reviews = 0, route;
+  const state = {preset: 'danger-full-access', sandbox: 'danger-full-access', approval: 'never', ...options};
+  const agent = {id: 'session-test', session: {id: 'session-test', header: {origin: 'web'}, requestHeader: () => ({config: {provider: 'working-provider', model: 'working-model'}}), snapshotEvents: () => [{type: 'user/message', data: {source: {kind: 'user', rpcId: 'r1'}, content: [{type: 'text', text: 'click fixture button'}]}}]}};
+  const services = {
+    sandboxPolicy: {resolve: () => ({mode: state.sandbox})},
+    permissionPresets: {current: () => state.preset},
+    approval: {effectivePolicy: () => state.approval, request: async () => { requests++; return options.outcome ?? 'allowed-once'; }},
+    llm: {async *stream(value) { reviews++; route = value; if (options.reviewError) throw new Error('offline'); yield {type: 'text-delta', index: 0, text: options.reviewText ?? '{"decision":"allow"}'}; if (options.finish !== false) yield {type: 'finish', reason: {kind: 'stop'}}; }}
+  };
+  const exec = {agent, name: 'control_desktop', callId: 'call-1', signal: new AbortController().signal};
+  const ctx = {get: name => services[name]};
+  return {ctx, exec, state, services, get requests() {return requests;}, get reviews() {return reviews;}, get route() {return route;}};
+}
+const action = {kind: 'desktop', action: 'click', arguments: {elementId: 'e1'}, target: {title: 'fixture'}};
+const cfg = resolveConfig();
+
+test('full session follows without approval', async () => { const f = fixture(); await new PermissionGate(f.ctx, cfg).authorize('session-test', f.exec, action, f.exec.signal); assert.equal(f.requests, 0); });
+test('ask session uses official approval', async () => { const f = fixture({preset: 'custom', approval: 'ask'}); await new PermissionGate(f.ctx, cfg).authorize('session-test', f.exec, action, f.exec.signal); assert.equal(f.requests, 1); });
+test('workspace session requires host approval even plugin full-access', async () => { const f = fixture({preset: 'workspace-write', sandbox: 'workspace-write', approval: 'ask'}); await new PermissionGate(f.ctx, {...cfg, permissionMode: 'full-access'}).authorize('session-test', f.exec, action, f.exec.signal); assert.equal(f.requests, 1); });
+test('never does not grant restricted session full access', async () => { const f = fixture({preset: 'custom', sandbox: 'read-only'}); await assert.rejects(new PermissionGate(f.ctx, {...cfg, permissionMode: 'full-access'}).authorize('session-test', f.exec, action, f.exec.signal), {code: 'APPROVAL_DISABLED'}); });
+test('official auto review is preserved, with no redundant host approval', async () => { const f = fixture({preset: 'auto', approval: 'ask'}); await new PermissionGate(f.ctx, cfg).authorize('session-test', f.exec, action, f.exec.signal); assert.equal(f.requests, 0); });
+test('manual approval mode adds ask to Auto session', async () => { const f = fixture({preset: 'auto', approval: 'ask'}); await new PermissionGate(f.ctx, {...cfg, permissionMode: 'user-approval'}).authorize('session-test', f.exec, action, f.exec.signal); assert.equal(f.requests, 1); });
+test('approval rejection fails closed', async () => { const f = fixture({preset: 'custom', approval: 'ask', outcome: 'rejected'}); await assert.rejects(new PermissionGate(f.ctx, cfg).authorize('session-test', f.exec, action, f.exec.signal), {code: 'APPROVAL_DENIED'}); });
+test('missing effective permissions fail closed', async () => { const f = fixture(); delete f.services.sandboxPolicy; await assert.rejects(new PermissionGate(f.ctx, cfg).authorize('session-test', f.exec, action, f.exec.signal), {code: 'PERMISSION_UNAVAILABLE'}); });
+test('configured reviewer uses exact provider/model', async () => { const f = fixture(); await new PermissionGate(f.ctx, {...cfg, permissionMode: 'model-review', reviewerProvider: 'review-provider', reviewerModel: 'review-model'}).authorize('session-test', f.exec, action, f.exec.signal); assert.equal(f.reviews, 1); assert.equal(f.route.provider, 'review-provider'); assert.equal(f.route.model, 'review-model'); assert.ok(f.route.messages[0].content[0].text.includes('click fixture button')); });
+test('empty reviewer route follows session model', async () => { const f = fixture(); await new PermissionGate(f.ctx, {...cfg, permissionMode: 'model-review'}).authorize('session-test', f.exec, action, f.exec.signal); assert.equal(f.route.model, 'working-model'); });
+for (const [title, options, code] of [
+  ['model deny', {reviewText: '{"decision":"deny","reason":"not authorized"}'}, 'MODEL_REJECTED'],
+  ['model offline', {reviewError: true}, 'REVIEW_FAILED'],
+  ['model malformed', {reviewText: 'ALLOW'}, 'REVIEW_INVALID'],
+  ['model no terminal finish', {finish: false}, 'REVIEW_FAILED'],
+  ['model conflicting members', {reviewText: '{"decision":"deny","decision":"allow"}'}, 'REVIEW_INVALID']
+]) test(`${title} prevents execution`, async () => { const f = fixture(options); await assert.rejects(new PermissionGate(f.ctx, {...cfg, permissionMode: 'model-review'}).authorize('session-test', f.exec, action, f.exec.signal), {code}); });
+test('permissions changing while approval pending require retry', async () => { const f = fixture({preset: 'custom', approval: 'ask'}); f.services.approval.request = async () => { f.state.approval = 'never'; return 'allowed-once'; }; await assert.rejects(new PermissionGate(f.ctx, cfg).authorize('session-test', f.exec, action, f.exec.signal), {code: 'PERMISSION_CHANGED'}); });
+test('aborted calls are never approved', async () => { const f = fixture(), c = new AbortController(); c.abort(); await assert.rejects(new PermissionGate(f.ctx, cfg).authorize('session-test', f.exec, action, c.signal), {code: 'CANCELLED'}); });
+test('stalled reviewer cannot hold control after user cancellation', async () => { const f = fixture(), c = new AbortController(); f.services.llm.stream = async function* () { await new Promise(resolve => setTimeout(resolve, 200)); yield {type: 'text-delta', index: 0, text: '{"decision":"allow"}'}; }; const timer = setTimeout(() => c.abort(), 20); const start = Date.now(); await assert.rejects(new PermissionGate(f.ctx, {...cfg, permissionMode: 'model-review'}).authorize('session-test', f.exec, action, c.signal), {code: 'CANCELLED'}); assert.ok(Date.now() - start < 150); clearTimeout(timer); });
+test('observations cannot be used by another session', () => { const store = new Observations(); const id = store.add('a', {kind: 'desktop'}); assert.throws(() => store.get('b', id, 'desktop'), {code: 'INVALID_OBSERVATION'}); assert.throws(() => store.get('a', id, 'browser'), {code: 'INVALID_OBSERVATION'}); });
+test('expired observations must be renewed', () => { const store = new Observations(-1); const id = store.add('a', {kind: 'desktop'}); assert.throws(() => store.get('a', id, 'desktop'), {code: 'STALE_OBSERVATION'}); });
+test('simultaneous desktop/browser ownership is exclusive', async () => { const c = new Coordinator(); let release; const pending = c.run('a', 'desktop', null, () => new Promise(resolve => { release = resolve; })); await assert.rejects(c.run('b', 'browser', null, async () => {}), {code: 'CONTROL_BUSY'}); assert.throws(() => c.stop('b'), {code: 'NOT_OWNER'}); release(); await pending; assert.equal(c.status.owner, null); });
+test('stop cancels the active operation and releases ownership', async () => { const c = new Coordinator(); const pending = c.run('a', 'browser', null, signal => new Promise(resolve => signal.addEventListener('abort', resolve))); c.stop('a'); await pending; assert.equal(c.status.owner, null); });
+test('URL rejects file/javascript and embedded credentials', () => { for (const url of ['file:///C:/secret', 'javascript:alert(1)', 'https://user:password@example.org', 'about:settings']) assert.throws(() => validUrl(url), {code: 'INVALID_URL'}); assert.equal(validUrl('https://example.org'), 'https://example.org/'); });
+test('invalid config bounds fail before loading backend', () => { assert.throws(() => resolveConfig({operationTimeoutMs: 0})); assert.throws(() => resolveConfig({permissionMode: 'wrong'})); });
+test('denied action never reaches native input backend', async () => {
+  const f = fixture({preset: 'custom', approval: 'ask', outcome: 'rejected'}), nativeCalls = [];
+  const native = {call: async action => { nativeCalls.push(action); return {nativeObservation: 'x', windowId: 1, elements: []}; }, dispose: async () => {}};
+  const runtime = new ControlRuntime(f.ctx, {stateDir: mkdtempSync(join(tmpdir(), 'dsh-control-test-'))}, {native, browser: {dispose: async () => {}}});
+  const observed = await runtime.call('desktop', {action: 'observe', windowId: 1}, f.exec);
+  await assert.rejects(runtime.call('desktop', {action: 'click', observationId: observed.observationId, elementId: 'e1'}, f.exec), {code: 'APPROVAL_DENIED'});
+  assert.deepEqual(nativeCalls.filter(a=>!a.startsWith('visual')), ['observe']); await runtime.dispose();
+});
+test('tool schemas compile against installed DSH output contracts', async () => { const f = fixture(); const runtime = new ControlRuntime(f.ctx, {stateDir: mkdtempSync(join(tmpdir(), 'dsh-control-test-'))}); assert.equal(runtime.tools().length, 3); const status = await runtime.tools()[2].execute({}, f.exec); assert.equal(status.ok, true); assert.equal(status.data.permission.sandbox, 'danger-full-access'); await runtime.dispose(); });
+test('setting a reviewer is isolated and durable per session', async () => { const f = fixture(), stateDir = mkdtempSync(join(tmpdir(), 'dsh-control-test-')); const a = new ControlRuntime(f.ctx, {stateDir}); await a.command(f.exec.agent, 'reviewer custom-provider custom-model'); await a.command(f.exec.agent, 'mode model-review'); const b = new ControlRuntime(f.ctx, {stateDir}); b.loadSettings('session-test'); assert.equal(b.gate.settings('session-test').reviewerModel, 'custom-model'); assert.equal(b.gate.settings('other').permissionMode, 'follow-session'); await a.dispose(); await b.dispose(); });
+test('screen capture works without a fabricated window and returns session-owned citation', async () => {
+  const f=fixture(),calls=[],native={call:async action=>{calls.push(action);return action==='screen'?{scope:'screen',nativeObservation:'screen-test',windows:[{windowId:7,title:'fixture'}],elements:[]}: {pngBase64:'png'};},dispose:async()=>{}};
+  const runtime=new ControlRuntime(f.ctx,{stateDir:mkdtempSync(join(tmpdir(),'dsh-control-test-'))},{native,browser:{dispose:async()=>{}}});
+  const screen=await runtime.call('desktop',{action:'screenshot'},f.exec);assert.equal(screen.scope,'screen');assert.ok(screen.observationId);assert.deepEqual(calls.filter(a=>!a.startsWith('visual')),['screen','screenshot']);await runtime.dispose();
+});
+test('screen input rejects missing mouse mode and target outside cited snapshot before native access', async () => {
+  const f=fixture(),calls=[],native={call:async action=>{calls.push(action);return {scope:'screen',nativeObservation:'screen-test',windows:[{windowId:7}],elements:[]};},dispose:async()=>{}};
+  const runtime=new ControlRuntime(f.ctx,{stateDir:mkdtempSync(join(tmpdir(),'dsh-control-test-'))},{native,browser:{dispose:async()=>{}}}),screen=await runtime.call('desktop',{action:'screen'},f.exec);
+  await assert.rejects(runtime.call('desktop',{action:'click',windowId:7,observationId:screen.observationId,x:1,y:2},f.exec),{code:'SCREEN_REQUIRES_MOUSE'});
+  await assert.rejects(runtime.call('desktop',{action:'click',mode:'mouse',windowId:8,observationId:screen.observationId,x:1,y:2},f.exec),{code:'TARGET_NOT_OBSERVED'});
+  assert.deepEqual(calls.filter(a=>!a.startsWith('visual')),['screen','screenshot']);await runtime.dispose();
+});
+test('screen input still requires restricted session approval for the actual target', async () => {
+  const f=fixture({preset:'workspace-write',sandbox:'workspace-write',approval:'ask',outcome:'rejected'}),calls=[],native={call:async action=>{calls.push(action);return {scope:'screen',nativeObservation:'screen-test',windows:[{windowId:7,title:'Taskbar',className:'Shell_TrayWnd'}],elements:[]};},dispose:async()=>{}};
+  const runtime=new ControlRuntime(f.ctx,{stateDir:mkdtempSync(join(tmpdir(),'dsh-control-test-'))},{native,browser:{dispose:async()=>{}}}),screen=await runtime.call('desktop',{action:'screen'},f.exec);
+  await assert.rejects(runtime.call('desktop',{action:'click',mode:'mouse',windowId:7,observationId:screen.observationId,x:1,y:2},f.exec),{code:'APPROVAL_DENIED'});
+  assert.equal(f.requests,1);assert.deepEqual(calls.filter(a=>!a.startsWith('visual')),['screen','screenshot']);await runtime.dispose();
+});
+function presenceFixture(options={}){
+  const f=fixture(options),calls=[],native={call:async(action,args)=>{calls.push({action,args});return {windowId:7,nativeObservation:'fixture',elements:[]};},dispose:async()=>{}},browser={hide:async()=>{},dispose:async()=>{}};
+  const runtime=new ControlRuntime(f.ctx,{stateDir:mkdtempSync(join(tmpdir(),'dsh-control-presence-'))},{native,browser});return {...f,runtime,native,calls};
+}
+test('first observation displays presence before reading without acquiring input lease',async()=>{
+  const f=presenceFixture();try{await f.runtime.call('desktop',{action:'observe',windowId:7},f.exec);assert.equal(f.calls[0].action,'visual');assert.equal(f.calls[0].args.phase,'observe');assert.ok(f.calls.find(x=>x.action==='observe'));assert.ok(!f.calls.some(x=>x.action==='begin'));assert.equal(f.runtime.status(f.exec.agent).presence.phase,'thinking');}finally{await f.runtime.dispose();}
+});
+test('manual stop between tools blocks both screenshots and input until explicit human resume',async()=>{
+  const f=presenceFixture(),cancelled=[];f.services.agents={get:()=>({cancel:(cause,options)=>cancelled.push({cause,options})})};try{const obs=await f.runtime.call('desktop',{action:'observe',windowId:7},f.exec);f.native.onEscape();assert.deepEqual(cancelled,[{cause:{kind:'user'},options:{keepInbox:true}}]);await assert.rejects(f.runtime.call('desktop',{action:'windows'},f.exec),{code:'CONTROL_STOPPED'});await assert.rejects(f.runtime.call('desktop',{action:'click',observationId:obs.observationId,elementId:'e1'},f.exec),{code:'CONTROL_STOPPED'});await f.runtime.command(f.exec.agent,'resume');await f.runtime.call('desktop',{action:'observe',windowId:7},f.exec);assert.equal(f.runtime.status(f.exec.agent).stopped,false);}finally{await f.runtime.dispose();}
+});
+test('another session cannot remove an idle presence or stop its work',async()=>{
+  const f=presenceFixture();try{await f.runtime.call('desktop',{action:'windows'},f.exec);await assert.rejects(f.runtime.command({session:{id:'other'}},'stop'),{code:'NOT_OWNER'});assert.equal(f.runtime.presence.owner,'session-test');}finally{await f.runtime.dispose();}
+});
+test('operator stop during pending approval aborts before any input and remains latched',async()=>{
+  const f=presenceFixture({preset:'workspace-write',sandbox:'workspace-write',approval:'ask'});let waiting=false;f.services.approval.request=()=>{waiting=true;return new Promise(()=>{});};
+  try{const obs=await f.runtime.call('desktop',{action:'observe',windowId:7},f.exec),pending=f.runtime.call('desktop',{action:'click',observationId:obs.observationId,elementId:'e1'},f.exec);void pending.catch(()=>{});while(!waiting)await new Promise(r=>setImmediate(r));await f.runtime.command(f.exec.agent,'stop');await assert.rejects(pending,{code:'CANCELLED'});assert.ok(!f.calls.some(x=>x.action==='begin'));assert.equal(f.runtime.status(f.exec.agent).stopped,true);}finally{await f.runtime.dispose();}
+});
+test('turn completion hides presence without claiming input ownership or changing permissions',async()=>{
+  const f=presenceFixture();try{await f.runtime.call('desktop',{action:'windows'},f.exec);await f.runtime.presence.finish('session-test');assert.equal(f.runtime.status(f.exec.agent).presence.owner,null);assert.equal(f.runtime.status(f.exec.agent).permission.sandbox,'danger-full-access');assert.ok(f.calls.some(x=>x.action==='visual-stop'));}finally{await f.runtime.dispose();}
+});
+test('recoverable target failure retains continuous presence and releases input ownership',async()=>{
+  const f=presenceFixture();const original=f.native.call;f.native.call=async(action,args)=>{if(action==='observe')throw Object.assign(new Error('UIA temporarily unavailable'),{code:'UIA_ERROR'});return original(action,args);};
+  try{await assert.rejects(f.runtime.call('desktop',{action:'observe',windowId:7},f.exec),{code:'UIA_ERROR'});assert.equal(f.runtime.presence.owner,'session-test');assert.equal(f.runtime.presence.phase,'blocked');assert.equal(f.runtime.coordinator.status.owner,null);assert.ok(!f.calls.some(c=>c.action==='visual-stop'));}finally{await f.runtime.dispose();}
+});
+test('disappearing native indicator ends the segment instead of running invisibly',async()=>{
+  const f=presenceFixture();const original=f.native.call;f.native.call=async(action,args)=>action==='visual-health'?{visible:false}:original(action,args);
+  try{await f.runtime.call('desktop',{action:'windows'},f.exec);await new Promise(r=>setTimeout(r,1150));assert.equal(f.runtime.status(f.exec.agent).stopped,true);assert.equal(f.runtime.presence.owner,undefined);await assert.rejects(f.runtime.call('desktop',{action:'windows'},f.exec),{code:'CONTROL_STOPPED'});}finally{await f.runtime.dispose();}
+});
+test('presence protocol versions both show and stop to reject stale native updates',async()=>{
+  const f=presenceFixture();try{await f.runtime.call('desktop',{action:'windows'},f.exec);await f.runtime.presence.finish('session-test');const show=f.calls.filter(c=>c.action==='visual').at(-1),stop=f.calls.find(c=>c.action==='visual-stop');assert.ok(Number.isInteger(show.args.generation));assert.ok(stop.args.generation>show.args.generation);}finally{await f.runtime.dispose();}
+});
+test('GUI wait is bounded and returns a fresh screenshot without acquiring an input lease',async()=>{
+  const f=presenceFixture();try{await assert.rejects(f.runtime.call('desktop',{action:'wait',waitMs:11000},f.exec),{code:'INVALID_ARGUMENT'});const result=await f.runtime.call('desktop',{action:'wait',query:'Fixture',waitMs:200},f.exec);assert.ok(result.observationId);assert.deepEqual(f.calls.filter(c=>!c.action.startsWith('visual')).map(c=>c.action),['wait-for','screen','screenshot']);assert.ok(!f.calls.some(c=>c.action==='begin'));}finally{await f.runtime.dispose();}
+});
+function receiptFixture(){const store=new Observations(),evidence=new Evidence(store),observation={kind:'desktop',windowId:7,title:'fixture',observedAt:Date.now()},id=store.add('a',observation),plan={action:'click',mode:'mouse',windowId:7,button:'left',count:2,elementId:'e1'},receipt=evidence.sign('a',id,observation,plan,{name:'Steam',role:'ControlType.ListItem',source:'desktop-shortcut',rect:{x:20,y:30,width:60,height:60}});return {store,evidence,observation,id,plan,args:{...plan,observationId:id,targetEvidence:receipt}};}
+test('signed target facts bind one exact mouse plan and survive harmless JSON member reordering',()=>{const f=receiptFixture();f.args.targetEvidence.facts=Object.fromEntries(Object.entries(f.args.targetEvidence.facts).reverse());assert.equal(f.evidence.verify('a',f.args).name,'Steam');});
+test('target facts reject tampering and cross-session replay',()=>{const f=receiptFixture();assert.throws(()=>f.evidence.verify('b',f.args),{code:'INVALID_TARGET_EVIDENCE'});f.args.targetEvidence.facts.name='Delete all';assert.throws(()=>f.evidence.verify('a',f.args),{code:'INVALID_TARGET_EVIDENCE'});});
+test('target facts reject changed effective click count, mode or target',()=>{const f=receiptFixture();for(const changes of [{count:1},{mode:'uia'},{windowId:8},{elementId:'e2'}])assert.throws(()=>f.evidence.verify('a',{...f.args,...changes}),{code:'TARGET_PLAN_CHANGED'});assert.equal(f.evidence.resolve('a',{...f.args,x:785,y:1056}).args.x,undefined);});
+test('target facts expire and cannot be replayed after a fresh runtime signing key',()=>{const f=receiptFixture();assert.throws(()=>new Evidence(f.store).verify('a',f.args),{code:'INVALID_TARGET_EVIDENCE'});f.args.targetEvidence=f.evidence.sign('a',f.id,{...f.observation,observedAt:Date.now()-60001},f.plan,{name:'Steam'});assert.throws(()=>f.evidence.verify('a',f.args),{code:'INVALID_TARGET_EVIDENCE'});});
+test('prepare returns reviewable observed target facts without acquiring or delivering input',async()=>{const f=presenceFixture();f.native.call=async(action,args)=>{f.calls.push({action,args});return action==='inspect'?{windowId:7,elementId:'e1',name:'显示桌面',role:'ControlType.Button',source:'shell-screen-point',rect:{x:1908,y:1032,width:12,height:48},window:{windowId:7,title:'',className:'Shell_TrayWnd'}}:{windowId:7,nativeObservation:'fixture',elements:[]};};try{const o=await f.runtime.call('desktop',{action:'observe',windowId:7},f.exec),r=await f.runtime.call('desktop',{action:'prepare',observationId:o.observationId,elementId:'e1'},f.exec);assert.equal(r.click.targetEvidence.facts.name,'显示桌面');assert.equal(r.click.mode,'mouse');assert.equal(f.runtime.evidence.verify('session-test',r.click).plan.count,1);assert.ok(!f.calls.some(x=>x.action==='begin'||x.action==='click'));}finally{await f.runtime.dispose();}});
+test('PTC dispatch shows review presence before native Auto Review can block the body',async()=>{const f=presenceFixture();try{f.runtime.sessionEvent(f.exec.agent.session,{type:'tool/ptc-dispatch-start',data:{name:'control_desktop',arguments:{action:'click'}}});await new Promise(r=>setImmediate(r));assert.equal(f.runtime.presence.phase,'review');assert.equal(f.calls[0].action,'visual');assert.ok(!f.calls.some(x=>x.action==='begin'));await f.runtime.command(f.exec.agent,'stop');assert.equal(f.runtime.status(f.exec.agent).stopped,true);}finally{await f.runtime.dispose();}});
+test('failed native visibility acknowledgement pauses before any observation or mouse input',async()=>{const f=presenceFixture();f.native.call=async(action,args)=>{f.calls.push({action,args});return {visible:false};};try{await assert.rejects(f.runtime.call('desktop',{action:'windows'},f.exec),{code:'INDICATOR_UNAVAILABLE'});assert.ok(!f.calls.some(x=>x.action==='windows'||x.action==='begin'));assert.equal(f.runtime.status(f.exec.agent).presence.lastError.code,'INDICATOR_UNAVAILABLE');}finally{await f.runtime.dispose();}});
+test('flattened signed facts from exported sessions normalize without weakening verification',()=>{const f=receiptFixture(),r=f.args.targetEvidence;const args={...f.args,targetEvidence:{...r.facts,proof:r.proof}};assert.equal(f.evidence.verify('a',args).name,'Steam');delete args.windowId;delete args.count;assert.equal(f.evidence.resolve('a',args).args.count,2);});
+test('registered perform plan needs one request id and rejects overrides or another session',async()=>{const f=presenceFixture();try{const obs=f.runtime.remember('session-test',{kind:'desktop',windowId:7,nativeObservation:'x',elements:[]}),click=f.runtime.plan('session-test',obs,{name:'Steam',source:'desktop-shortcut',elementId:'e1'},2);assert.equal(f.runtime.resolvePlan('session-test',f.runtime.planPerform.get(click)).count,2);assert.throws(()=>f.runtime.resolvePlan('other',f.runtime.planPerform.get(click)),{code:'INVALID_PLAN'});assert.throws(()=>f.runtime.resolvePlan('session-test',{...f.runtime.planPerform.get(click),count:1}),{code:'TARGET_PLAN_CHANGED'});}finally{await f.runtime.dispose();}});
+function consentFixture(){let descriptor={key:{target:{name:'Steam',identity:'window-1'},action:'click',count:1},summary:'鼠标单击 Steam'},prompts=0,fallback=0;const consents=new Consents({call:async()=>{prompts++;return {};},running:true},()=>descriptor);const req={agent:{session:{id:'a'}},toolName:'control_desktop',callId:'x',signal:new AbortController().signal};return {consents,req,next:async()=>{fallback++;return 'allowed-once';},set descriptor(v){descriptor=v;},get prompts(){return prompts;},get fallback(){return fallback;}};}
+test('manual same-request approval is reused only for same target and parameters',async()=>{const f=consentFixture(),first=f.consents.request(f.req,f.next);await new Promise(r=>setImmediate(r));f.consents.answer('a',f.consents.status('a').pending.id,'same');assert.equal(await first,'allowed-once');const count=f.prompts;assert.equal(await f.consents.request(f.req,f.next),'allowed-once');assert.equal(f.prompts,count);f.descriptor={key:{target:{name:'Steam',identity:'window-1'},action:'click',count:2},summary:'双击'};const changed=f.consents.request(f.req,f.next);await new Promise(r=>setImmediate(r));assert.ok(f.consents.status('a').pending);f.consents.answer('a',f.consents.status('a').pending.id,'reject');assert.equal(await changed,'rejected');});
+test('approve once never creates a reusable grant',async()=>{const f=consentFixture(),first=f.consents.request(f.req,f.next);await new Promise(r=>setImmediate(r));f.consents.answer('a',f.consents.status('a').pending.id,'once');assert.equal(await first,'allowed-once');assert.deepEqual(f.consents.status('a').remembered,[]);});
+test('same-request grants are isolated and clearable',async()=>{const f=consentFixture(),first=f.consents.request(f.req,f.next);await new Promise(r=>setImmediate(r));f.consents.answer('a',f.consents.status('a').pending.id,'same');await first;assert.throws(()=>f.consents.answer('b','anything','same'),{code:'APPROVAL_GONE'});assert.equal(f.consents.status('b').remembered.length,0);f.consents.clear('a');assert.equal(f.consents.status('a').remembered.length,0);});
+test('operator cancellation rejects pending manual consent without recording a grant',async()=>{const f=consentFixture(),controller=new AbortController(),pending=f.consents.request({...f.req,signal:controller.signal},f.next);void pending.catch(()=>{});await new Promise(r=>setImmediate(r));controller.abort();await assert.rejects(pending,{code:'CANCELLED'});assert.equal(f.consents.status('a').pending,null);assert.equal(f.consents.status('a').remembered.length,0);});
