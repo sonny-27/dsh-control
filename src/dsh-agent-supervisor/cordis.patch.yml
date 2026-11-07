@@ -1,0 +1,3 @@
+- insert:
+    - id: dsh-agent-supervisor
+      name: dsh-agent-supervisor

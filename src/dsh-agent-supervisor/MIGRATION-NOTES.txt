@@ -1,0 +1,4 @@
+Unofficial migration fork for exact DSH 0.2.1-rc.2.
+Source version: 0.1.3
+Cumulative source behavior preserved; see migration COMPATIBILITY.json for actual validation and limits.
+No Hermes, subscription, or preset overwrites are hidden inside Taskboard.

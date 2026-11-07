@@ -1,0 +1,1 @@
+Metadata/cohort-only port from 0.1.3-dsh021rc1.1. Core SDK code verified unchanged. All cumulative plugin logic remains.
